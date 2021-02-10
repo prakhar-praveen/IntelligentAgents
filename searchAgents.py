@@ -45,7 +45,7 @@ class GoWestAgent(Agent):
     "An agent that goes West until it can't."
 
     def getAction(self, state):
-        "The agent receives a GameState (defined in pacman.py)."
+        "The agent receivesu a GameState (defined in pacman.py)."
         if Directions.WEST in state.getLegalPacmanActions():
             return Directions.WEST
         else:
@@ -295,6 +295,7 @@ class CornersProblem(search.SearchProblem):
         space)
         """
         "*** YOUR CODE HERE ***"
+        return (self.startingPosition,[])
         util.raiseNotDefined()
 
     def isGoalState(self, state):
@@ -302,6 +303,12 @@ class CornersProblem(search.SearchProblem):
         Returns whether this search state is a goal state of the problem.
         """
         "*** YOUR CODE HERE ***"
+        visited = state[1]
+        if state[0] in self.corners and state[0] not in visited:
+            visited.append(state[0])
+            if len(visited) == 4:
+                return True
+        return False
         util.raiseNotDefined()
 
     def getSuccessors(self, state):
@@ -325,7 +332,18 @@ class CornersProblem(search.SearchProblem):
             #   hitsWall = self.walls[nextx][nexty]
 
             "*** YOUR CODE HERE ***"
+            position = state[0]
+            visited = state[1]
 
+            x,y = position
+
+            x_coordinate, y_coordinate = Actions.directionToVector(action)
+            next_x_coordinate, next_y_coordinate = int(x + x_coordinate), int(y + y_coordinate)
+            hitsWall = self.walls[next_x_coordinate,next_y_coordinate]
+            if not hitsWall:
+                nextPosition = (next_x_coordinate,next_y_coordinate)
+                cost = self.costFn(nextPosition)
+                successors.append( (nextPosition,action,cost) )
         self._expanded += 1 # DO NOT CHANGE
         return successors
 
@@ -360,7 +378,22 @@ def cornersHeuristic(state, problem):
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
 
     "*** YOUR CODE HERE ***"
-    return 0 # Default to trivial solution
+    visited = []
+    remainingCorners = []
+    givenCurrNode = state[0]
+    heuristicCost = 0
+
+    for corner in corners:
+        if corner not in visited:
+            remainingCorners.append(corner)
+
+    while remainingCorners:
+        distance,corner = min([(util.manhattanDistance(givenCurrNode, corner), corner) \
+                               for corner in remainingCorners])
+        heuristicCost += distance
+        givenCurrNode = corner
+        remainingCorners.remove(corner)
+    return heuristicCost
 
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
