@@ -87,10 +87,8 @@ def depthFirstSearch(problem):
     print("Start's successors:", problem.getSuccessors(problem.getStartState()))
     """
     "*** YOUR CODE HERE ***"
-    #trivial case-- Start state == goal state
+    
     start_state = problem.getStartState()
-    if problem.isGoalState(start_state):
-        return []
 
     #Implementing our Depth-first Search using stack
     fringe_stack = util.Stack()
@@ -109,12 +107,11 @@ def depthFirstSearch(problem):
 
     #Initializing set for storing visited nodes
     visited_set = set()
-    #Adding start state to visited set because it's been visited(added to the stack)
-    visited_set.add(start_state)
-
+    
     #Depth-first Search:
+    
     while fringe_stack:
-        node_curr,actions_list = fringe_stack.pop()
+        node_curr, actions_list = fringe_stack.pop()
 
         #Checking if current node has been already expanded
         #If not, adding it to visited_set
@@ -128,15 +125,6 @@ def depthFirstSearch(problem):
                 #every successor returned by the function is a triple (successor,action, stepCost)
                 for successor_node,action,step_cost in problem.getSuccessors(node_curr):
                     fringe_stack.push((successor_node,actions_list + [action]))
-        else:
-            if problem.isGoalState(node_curr):
-                return actions_list
-            else:
-                #Iterating through the list of successors given by the getSuccessor funtion
-                #every successor returned by the function is a triple (successor,action, stepCost)
-                for successor_node,action,step_cost in problem.getSuccessors(node_curr):
-                    fringe_stack.push((successor_node,actions_list + [action]))
-    util.raiseNotDefined()
 
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
