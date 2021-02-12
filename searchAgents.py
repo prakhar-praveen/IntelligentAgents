@@ -4,7 +4,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
+#
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -296,20 +296,13 @@ class CornersProblem(search.SearchProblem):
         """
         "*** YOUR CODE HERE ***"
         return (self.startingPosition,[])
-        util.raiseNotDefined()
 
     def isGoalState(self, state):
         """
         Returns whether this search state is a goal state of the problem.
         """
         "*** YOUR CODE HERE ***"
-        visited = state[1]
-        if state[0] in self.corners and state[0] not in visited:
-            visited.append(state[0])
-            if len(visited) == 4:
-                return True
-        return False
-        util.raiseNotDefined()
+        return len(state[1]) == 4
 
     def getSuccessors(self, state):
         """
@@ -323,29 +316,30 @@ class CornersProblem(search.SearchProblem):
         """
 
         successors = []
+        position, seenCorners = state[0], state[1]
         for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
             # Add a successor state to the successor list if the action is legal
             # Here's a code snippet for figuring out whether a new position hits a wall:
-            #   x,y = currentPosition
-            #   dx, dy = Actions.directionToVector(action)
-            #   nextx, nexty = int(x + dx), int(y + dy)
-            #   hitsWall = self.walls[nextx][nexty]
-
             "*** YOUR CODE HERE ***"
-            position = state[0]
-            visited = state[1]
+            for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
+                #   x,y = currentPosition
+                x,y = position
+                #   dx, dy = Actions.directionToVector(action)
+                dx, dy = Actions.directionToVector(action)
+                #   nextx, nexty = int(x + dx), int(y + dy)
+                nextx, nexty = int(x + dx), int(y + dy)
+                #   hitsWall = self.walls[nextx][nexty]
+                hitsWall = self.walls[nextx][nexty]
 
-            x,y = position
+                if not hitsWall:
+                    if (nextx, nexty) in self.corners and (nextx, nexty) not in seenCorners:
+                        visited = seenCorners + [(nextx, nexty)]
+                        successors.append((((nextx, nexty), visited), action, 1))
+                    else:
+                        successors.append((((nextx, nexty), seenCorners), action, 1))
+            self._expanded += 1 # DO NOT CHANGE
+            return successors
 
-            x_coordinate, y_coordinate = Actions.directionToVector(action)
-            next_x_coordinate, next_y_coordinate = int(x + x_coordinate), int(y + y_coordinate)
-            hitsWall = self.walls[next_x_coordinate,next_y_coordinate]
-            if not hitsWall:
-                nextPosition = (next_x_coordinate,next_y_coordinate)
-                cost = self.costFn(nextPosition)
-                successors.append( (nextPosition,action,cost) )
-        self._expanded += 1 # DO NOT CHANGE
-        return successors
 
     def getCostOfActions(self, actions):
         """
@@ -378,7 +372,7 @@ def cornersHeuristic(state, problem):
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
 
     "*** YOUR CODE HERE ***"
-    visited = []
+    visited = state[1]
     remainingCorners = []
     givenCurrNode = state[0]
     heuristicCost = 0
