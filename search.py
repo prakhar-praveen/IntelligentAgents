@@ -23,7 +23,6 @@ class SearchProblem:
     """
     This class outlines the structure of a search problem, but doesn't implement
     any of the methods (in object-oriented terminology: an abstract class).
-
     You do not need to change anything in this class, ever.
     """
 
@@ -36,7 +35,6 @@ class SearchProblem:
     def isGoalState(self, state):
         """
           state: Search state
-
         Returns True if and only if the state is a valid goal state.
         """
         util.raiseNotDefined()
@@ -44,7 +42,6 @@ class SearchProblem:
     def getSuccessors(self, state):
         """
           state: Search state
-
         For a given state, this should return a list of triples, (successor,
         action, stepCost), where 'successor' is a successor to the current
         state, 'action' is the action required to get there, and 'stepCost' is
@@ -55,7 +52,6 @@ class SearchProblem:
     def getCostOfActions(self, actions):
         """
          actions: A list of actions to take
-
         This method returns the total cost of a particular sequence of actions.
         The sequence must be composed of legal moves.
         """
@@ -87,7 +83,11 @@ def depthFirstSearch(problem):
     print("Start's successors:", problem.getSuccessors(problem.getStartState()))
     """
     "*** YOUR CODE HERE ***"
-    
+
+    "Trivial Case: Start state == goal state"
+    if problem.isGoalState(problem.getStartState()):
+        return []
+
     start_state = problem.getStartState()
 
     #Implementing our Depth-first Search using stack
@@ -107,10 +107,11 @@ def depthFirstSearch(problem):
 
     #Initializing set for storing visited nodes
     visited_set = set()
-    
+
     #Depth-first Search:
-    
+
     while fringe_stack:
+
         node_curr, actions_list = fringe_stack.pop()
 
         #Checking if current node has been already expanded
@@ -129,13 +130,15 @@ def depthFirstSearch(problem):
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
     "*** YOUR CODE HERE ***"
+
+    "Trivial Case: Start state == goal state"
+    if problem.isGoalState(problem.getStartState()):
+        return []
+
     #similar implementation to the DFS implementation above
     #so reusing the skeleton from above
 
-    #trivial case-- Start state == goal state
     start_state = problem.getStartState()
-    if problem.isGoalState(start_state):
-        return []
 
     #BFS using Queue:
     #Implementing our Breadth-first Search using Queue, initialized below
@@ -150,31 +153,19 @@ def breadthFirstSearch(problem):
 
     # pushing current state and actions (node, actions) tuple
     # action is empty for start node
-    actionList = []
-    fringe_queue.push((start_state,actionList))
+    actionEmpty = []
+    fringe_queue.push((start_state,actionEmpty))
 
     #Initializing set for storing visited nodes
-    visited_set = set()
-    #Adding start state to visited set because it's been visited and added to the stack
-    visited_set.add(start_state)
-
+    visited_set = []
     #Breadth-first Search:
     while fringe_queue:
-        node_curr,actions_list = fringe_queue.pop()
+        node_curr, actions_list = fringe_queue.pop()
 
         #Checking if current node has been already expanded
         #If not, adding it to visited_set
         if node_curr not in visited_set:
-            visited_set.add(node_curr)
-            #If curr node/state is Goal state, return the actions
-            if problem.isGoalState(node_curr):
-                return actions_list
-            else:
-                #Iterating through the list of successors given by the getSuccessor funtion
-                #every successor returned by the function is a triple (successor,action, stepCost)
-                for successor_node,action,step_cost in problem.getSuccessor(node_curr):
-                    fringe_queue.push((successor_node,actions_list + [action]))
-        else:
+            visited_set.append(node_curr)
             #If curr node/state is Goal state, return the actions
             if problem.isGoalState(node_curr):
                 return actions_list
@@ -183,15 +174,15 @@ def breadthFirstSearch(problem):
                 #every successor returned by the function is a triple (successor,action, stepCost)
                 for successor_node,action,step_cost in problem.getSuccessors(node_curr):
                     fringe_queue.push((successor_node,actions_list + [action]))
-    util.raiseNotDefined()
 
 def uniformCostSearch(problem):
     """Search the node of least total cost first."""
     "*** YOUR CODE HERE ***"
     #trivial case: Start state == goal state
-    startState = problem.getStartState()
-    if problem.isgoalState(startState):
+    if problem.isGoalState(problem.getStartState()):
         return []
+
+    startState = problem.getStartState()
     #Implementing Uniform-cost Search using Priority Queue
     #becuase we choose to priorize based on cost
 
@@ -200,15 +191,13 @@ def uniformCostSearch(problem):
 
     #Using (node, action, currStepCost), nextStepCost) tuple
     #for storing info of every state
-    #Pushing first Start State
-    fringe_priority_queue.push((startState,[],0),0)
+    #Pushing Start State
+    fringe_priority_queue.push((startState, [], 0), 0)
     # pushing start state (start_node, actionList, currStepCost), nextStepCost)
     # where actionList is empty for start node, currStepCost = 0, nextStepCost
 
     #Initializing set for storing visited nodes
-    visited_set = set()
-    #Adding start state to visited set because it's been visited and added to the stack
-    visited_set.add(problem.getStartState())
+    visited_set = []
 
     #Uniform-cost Search:
     while fringe_priority_queue:
@@ -216,18 +205,19 @@ def uniformCostSearch(problem):
         #Checking if current node has been already expanded
         #If not, adding it to visited_set
         if node_curr not in visited_set:
-            visited_set.add(node_curr)
+
+            visited_set.append(node_curr)
+
             #If curr node/state is Goal state, return the actions
             if problem.isGoalState(node_curr):
                 return actions_list
             else:
                 #Iterating through the list of successors given by the getSuccessor funtion
                 #every successor returned by the function is a 3-tuple (successor,action, stepCost)
-                for successor_node,action,step_cost in problem.getSuccessors(node_curr):
+                for successor_node, action, step_cost in problem.getSuccessors(node_curr):
                     nextAction = actions_list + [action]
                     nextStepCost = problem.getCostOfActions(nextAction)
                     fringe_priority_queue.push((successor_node,nextAction,step_cost),nextStepCost)
-    util.raiseNotDefined()
 
 def nullHeuristic(state, problem=None):
     """
@@ -235,14 +225,15 @@ def nullHeuristic(state, problem=None):
     goal in the provided SearchProblem.  This heuristic is trivial.
     """
     return 0
-
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
     "*** YOUR CODE HERE ***"
-    startState = problem.getStartState()
     #trivial case: Start state == goal state
-    if problem.isGoalState(startState):
+    if problem.isGoalState(problem.getStartState()):
         return []
+
+    startState = problem.getStartState()
+
     #Implementing A* Search using Priority Queue
     #becuase we are still prioritizing searching based on cost
     #just like UCS, although we need to take into account heuristic too
@@ -257,9 +248,7 @@ def aStarSearch(problem, heuristic=nullHeuristic):
     # where actionList is empty for start node, currStepCost = 0, nextStepCost
 
     #Initializing set for storing visited nodes
-    visited_set = set()
-    #Adding start state to visited set because it's been visited and added to the stack
-    visited_set.add(problem.getStartState())
+    visited_set = []
 
     #A* Search:
     while fringe_priority_queue:
@@ -268,23 +257,19 @@ def aStarSearch(problem, heuristic=nullHeuristic):
         #Checking if current node has been already expanded
         #If not, adding it to visited_set
         if node_curr not in visited_set:
-
-            visited_set.add(node_curr)
-
+            visited_set.append(node_curr)
             #If curr node/state is Goal state, return the actions
             if problem.isGoalState(node_curr):
                 return actions_list
-
-            else:
                 #Iterating through the list of successors given by the getSuccessors funtion
                 #every successor returned by the function is a 3-tuple (successor,action, stepCost)
+            else:
                 for successor_node,action,step_cost in problem.getSuccessors(node_curr):
                     nextAction = actions_list + [action]
                     nextStepCost = problem.getCostOfActions(nextAction)
-                    heuristicCost = nextStepCost + heuristic(successor_node,problem)
-                    fringe_priority_queue.push((successor_node,nextAction,step_cost),nextStepCost)
+                    heuristicCost = nextStepCost + heuristic(successor_node, problem)
+                    fringe_priority_queue.push((successor_node,nextAction,nextStepCost),heuristicCost)
     util.raiseNotDefined()
-
 
 # Abbreviations
 bfs = breadthFirstSearch
