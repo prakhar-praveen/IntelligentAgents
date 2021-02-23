@@ -4,7 +4,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
+#
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -14,7 +14,7 @@
 
 from util import manhattanDistance
 from game import Directions
-import random, util
+import random, util, sys, math
 
 from game import Agent
 
@@ -74,8 +74,14 @@ class ReflexAgent(Agent):
         newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
 
         "*** YOUR CODE HERE ***"
-
-        return successorGameState.getScore()
+        foodList = newFood.asList()
+        minFoodMDistance = sys.maxsize
+        ghostLocationsList = successorGameState.getGhostPositions()
+        for _ in foodList: minFoodMDistance = min(minFoodMDistance, util.manhattanDistance(newPos, _))
+        for gpos in ghostLocationsList:
+            if (util.manhattanDistance(newPos, gpos) < 2):
+                return - float("inf")
+        return successorGameState.getScore() + 1.0/minFoodMDistance
 
 def scoreEvaluationFunction(currentGameState):
     """
@@ -136,53 +142,101 @@ class MinimaxAgent(MultiAgentSearchAgent):
         Returns whether or not the game state is a losing state
         """
         "*** YOUR CODE HERE ***"
-
+        return self.minimaxHelperFunction(gameState, 1, 0 )
         #Since there is only one Pacman_Agent (agent0) out of all agents in the game
         #number of ghosts will be numAgents - 1
-        num_of_agents = gameState.getNumAgents()
-        num_of_ghosts = num_of_agents - 1
-        pacman_agent_index = 0
-
+    def minimaxHelperFunction(self, gameState, curr_depth, agentIndex):
         if gameState.isWin() or gameState.isLose():
             return self.evaluationFunction(gameState)
+        elif curr_depth > self.depth:
+            return self.evaluationFunction(gameState)
 
-        def minimaxFunc(gameState, agent_index, depth):
-            optimal_action = None
-            if agent_index == 0 and depth == self.depth:
-                return None, self.evaluationFunction(gameState)
-            elif agent_index == 0:
-                optimal_value = float("-inf")
-            else:
-                optimal_value = float("inf")
+        legalActions = []
+        for _ in gameState.getLegalActions(agentIndex):
+            if _ != 'Stop':
+                legalActions.append(_)
 
-            if agent_index == num_of_ghosts:
-                depth = depth + 1
+        nextIndex = agentIndex + 1
+        nextDepth = curr_depth
 
-            for action in gameState.getLegalActions(agent_index):
-                next_action, nextValue = minimaxFunc(gameState.generateSuccessor(agent_index, action), depth, agent_index % (num_of_agents-1))
+        if nextIndex >= gameState.getNumAgents():
+            nextIndex = 0
+            nextDepth += 1
 
-                if agent_index > 0:
-                    if nextValue < optimal_value:
-                        _, optimal_action = nextValue, action
-                else:
-                    if(agent_index == 0):
-                        if nextValue > optimal_value:
-                            optimal_value, optimal_action = nextValue, action
-                    else:
-                        print("agent index cannot be less than zero")
-            return optimal_action, optimal_value
-        return minimaxFunc(gameState, 0, pacman_agent_index)
+
+        optimal_action_indexes = []
+        optimal_actions = []
+
+        for _ in legalActions:
+            optimal_actions.append(self.minimaxHelperFunction(gameState.generateSuccessor(agentIndex, _), nextDepth, nextIndex))
+        #pacman moves for the first time
+        if agentIndex == 0 and curr_depth == 1:
+            maxMove = max(optimal_actions)
+            for i in range(len(optimal_actions)):
+                if optimal_actions[i] == maxMove:
+                    optimal_action_indexes.append(i)
+            # return action of randomly
+            return legalActions[random.choice(optimal_action_indexes)]
+
+        if agentIndex == 0: return max(optimal_actions)
+        else: return min(optimal_actions)
+
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
-    Your minimax agent with alpha-beta pruning (question 3)
+      Your minimax agent with alpha-beta pruning (question 3)
     """
+    def maximize(self, gameState, depth, agentIndex, numGhosts, alpha, beta):
+        """
+          maximizing agent with alpha-beta pruning
+        """
+        if gameState.isWin() or gameState.isLose():
+            return self.evaluationFunction(gameState)
+        maximum = -sys.maxsize
+        optimal_action = Directions.STOP
+
+        for _ in gameState.getLegalActions(agentIndex):
+            nextGameState = gameState.generateSuccessor(agentIndex, _)
+
+            currMax = self.minimize(nextGameState, depth, 1, numGhosts, alpha, beta)
+
+            if currMax >  maximum:
+                maximum = currMax
+                optimal_action = _
+
+            if maximum > beta: return maximum
+            alpha = max(alpha, maximum)
+        if agentIndex == 0 and depth > 1: return maximum
+        return optimal_action
+
+    def minimize(self, gameState, depth, agentIndex, numGhosts, alpha, beta):
+        """
+          minimizing agent with alpha-beta pruning
+        """
+        if gameState.isWin() or gameState.isLose():
+            return self.evaluationFunction(gameState)
+        minimum = sys.maxsize
+        for _ in gameState.getLegalActions(agentIndex):
+            nextGameState = gameState.generateSuccessor(agentIndex, _)
+            if depth < self.depth and agentIndex == numGhosts: currMin = self.maximize(nextGameState, depth + 1, 0, numGhosts, alpha, beta)
+            elif agentIndex == numGhosts and not depth < self.depth: currMin = self.evaluationFunction(nextGameState)
+            else: currMin = self.minimize(nextGameState, depth, agentIndex + 1, numGhosts, alpha, beta)
+
+            if currMin == min(currMin, minimum): minimum = currMin
+
+            if agentIndex is not 0 and minimum < alpha: return minimum
+            else: beta = min(beta, minimum)
+        return minimum
+
     def getAction(self, gameState):
         """
-        Returns the minimax action using self.depth and self.evaluationFunction
+          Returns the minimax action using self.depth and self.evaluationFunction
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        if gameState.isWin() or gameState.isLose():
+            return self.evaluationFunction(gameState)
+        #0 as in pacman (agent0)  agentindex = 0 for maximizing  (pacman) agent
+        return self.maximize(gameState, 1, 0, gameState.getNumAgents() - 1, float("-inf"), float("inf"))
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
@@ -197,36 +251,43 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         legal moves.
         """
         "*** YOUR CODE HERE ***"
+        return
         util.raiseNotDefined()
-
-
-
+    def expectimaxHelper(self, gameState, currentDepth, agentIndex):
         if gameState.isWin() or gameState.isLose():
             return self.evaluationFunction(gameState)
+        elif currentDepth > self.depth:
+            return self.evaluationFunction(gameState)
 
-        def minimaxFunc(gameState, agent_index, depth):
-            optimal_action = None
-            if agent_index == 0 and depth == self.depth:
-                return None, self.evaluationFunction(gameState)
-            elif agent_index == 0:
-                optimal_value = float("-inf")
-            else:
-                optimal_value = float("inf")
+        legalActions = []
+        for _ in gameState.getLegalActions(agentIndex):
+            if _ != 'Stop':
+                legalActions.append(_)
 
-            if agent_index == num_of_ghosts:
-                depth = depth + 1
+        nextIndex = agentIndex + 1
+        nextDepth = currentDepth
 
-            for action in gameState.getLegalActions(agent_index):
-                next_action, nextValue = minimaxFunc(gameState.generateSuccessor(agent_index, action), depth, agent_index % (num_of_agents-1))
+        if nextIndex >= gameState.getNumAgents():
+            nextIndex = 0
+            nextDepth += 1
 
-                if agent_index > 0:
-                    if nextValue < optimal_value:
-                        _, optimal_action = nextValue, action
-                else:
-                    if(agent_index == 0):
-                        if nextValue > optimal_value:
-                            optimal_value, optimal_action = nextValue, action
-                    else:
-                        print("agent index cannot be less than zero")
-            return optimal_action, optimal_value
-        return minimaxFunc(gameState, 0, pacman_agent_index)
+
+
+        optimal_actions = []
+
+        optimal_action_indexes = []
+        for _ in legalActions:
+            optimal_actions.append(self.expectimaxHelper(gameState.generateSuccessor(agentIndex, _), nextDepth, nextIndex))
+        #pacman moves for the first time
+        if agentIndex == 0 and currentDepth == 1:
+            maxMove = max(optimal_actions)
+            for i in range(len(optimal_actions)):
+                if optimal_actions[i] == maxMove:
+                    optimal_action_indexes.append(i)
+            # return action of randomly
+            return legalActions[random.choice(optimal_action_indexes)]
+
+        if agentIndex == 0: return max(optimal_actions)
+        else:
+            "In ghost node, return the average(expected) value of action"
+            return sum(legalActions)/len(legalActions)
